@@ -44,8 +44,7 @@ public class BusNetwork {
 		int stop_id;
 		int node_id;
 		
-		double lat;
-		double lon;
+		String name;
 		
 		public Connection[] getConnections() {
 			Connection[] ret = new Connection[connection_amount];
@@ -78,20 +77,34 @@ public class BusNetwork {
 			return Double.MAX_VALUE;
 		}
 		
-		public Stop(int node_id, int stop_id, double lat, double lon) {
+		public String toString() {
+			return this.name;
+		}
+		
+		public Stop(int node_id, int stop_id, String name) {
 			this.node_id = node_id;
 			this.stop_id = stop_id;
 			
-			this.lat = lat;
-			this.lon = lon;
+			this.name = name;
 		}
 	}
 	
-	// Dijkstra
+	// Paths
 	
-	private static class Path {
+	public static class Path {
 		Stop[] stops = {};
 		double cost = 0;
+		
+		public String toString() {
+			String ret = "Total cost: " + Double.toString(cost) + "\n";
+			
+			for (int i = 0; i < stops.length; i++) {
+				if (stops[i] == null) {System.out.println("Failed to find path element " + i); break;}
+				ret = ret + stops[i].toString() + " -> ";
+			}
+			
+			return ret;
+		}
 	}
 	
 	public Path getPath(Stop from, Stop to) {
@@ -120,6 +133,8 @@ public class BusNetwork {
 			Stop current_stop = entry.stop;
 			double current_cost = entry.cost;
 			
+			if (current_stop == to) break; // Found target stop, exit early
+			
 			Connection[] connections = current_stop.getConnections();
 			for (int i = 0; i < connections.length; i++) {
 				Connection path = connections[i];
@@ -133,14 +148,14 @@ public class BusNetwork {
 				queue.remove(entry_cache[to_check.node_id]);
 				queue.add(new_entry);
 				
-				entry_cache[to_check.node_id] = entry;
+				entry_cache[to_check.node_id] = new_entry;
 				came_from[to_check.node_id] = current_stop.node_id;
 			}
 		}
 		
 		// Creating list of stops
 		
-		int stop_amount = 1;
+		int path_length = 1;
 		Stop current_stop = to;
 		
 		Stop[] stops = new Stop[1024];
@@ -151,15 +166,20 @@ public class BusNetwork {
 			if (from_id == -1) break;
 			
 			current_stop = this.getNode(from_id);
-			stops[stop_amount] = current_stop;
+			stops[path_length] = current_stop;
 			
-			stop_amount++;
+			path_length++;
+		}
+		
+		Stop[] new_stops = new Stop[path_length]; // Reversing list order and copying into list of minimal size
+		for (int i = 0; i < path_length; i++) {
+			new_stops[i] = stops[path_length-i-1];
 		}
 		
 		// Returning Path object
 		
 		Path path = new Path();
-		path.stops = stops;
+		path.stops = new_stops;
 		path.cost = entry_cache[to.node_id].cost;
 		
 		return path;
@@ -222,10 +242,9 @@ public class BusNetwork {
 			
 			int stop_id = Integer.parseInt(data[0]);
 			
-			double lat = Double.parseDouble(data[4]);
-			double lon = Double.parseDouble(data[5]);
+			String name = data[2];
 			
-			stops[i] = new Stop(i, stop_id, lat, lon);
+			stops[i] = new Stop(i, stop_id, name);
 		}
 		
 		// Connecting direct routes
