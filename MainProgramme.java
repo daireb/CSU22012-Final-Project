@@ -8,6 +8,5 @@ public class MainProgramme {
 		BusNetwork.Path path = network.getPath(start, finish);
 		
 		System.out.println(path.toString());
-		System.out.println("done");
 	}
 }

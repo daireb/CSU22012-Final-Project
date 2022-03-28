@@ -1,8 +1,6 @@
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.util.Comparator;
-import java.util.PriorityQueue;
-import java.util.Scanner;
+import java.util.*;
 
 public class BusNetwork {
 	// Config values
@@ -10,7 +8,14 @@ public class BusNetwork {
 	private static double direct_transfer_cost = 2.0;
 	private static double transfer_time_cost = 0.01;
 	
-	// PriorityQueue classes (for A*)
+	private static boolean debug_print_enabled = true;
+	
+	private static void debug_print(String to_print) {
+		if (debug_print_enabled)
+			System.out.println(to_print);
+	}
+	
+	// PriorityQueue classes (for Dijkstra)
 	
 	private class QueueItem {
 		Stop stop;
@@ -39,21 +44,11 @@ public class BusNetwork {
 	}
 	
 	public static class Stop {
-		Connection[] connections = new Connection[128];
-		int connection_amount = 0;
+		List<Connection> connections = new ArrayList<Connection>();
 		int stop_id;
 		int node_id;
 		
 		String name;
-		
-		public Connection[] getConnections() {
-			Connection[] ret = new Connection[connection_amount];
-			for (int i = 0; i < connection_amount; i++) {
-				ret[i] = connections[i];
-			}
-			
-			return ret;
-		}
 		
 		public void connect(Stop to, double length) {
 			Connection conn = new Connection();
@@ -62,14 +57,15 @@ public class BusNetwork {
 			conn.to = to;
 			conn.cost = length;
 			
-			connections[connection_amount] = conn;
-			connection_amount++;
+			connections.add(conn);
+			
+			//connections[connection_amount] = conn;
+			//connection_amount++;
 		}
 		
 		public double getCost(Stop target) {
 			if (target == this) return 0;
-			for (int i = 0; i < this.connection_amount; i++) {
-				Connection c = this.connections[i];
+			for (Connection c:connections) {
 				if (c.to == target)
 					return c.cost;
 			}
@@ -99,7 +95,6 @@ public class BusNetwork {
 			String ret = "Total cost: " + Double.toString(cost) + "\n";
 			
 			for (int i = 0; i < stops.length; i++) {
-				if (stops[i] == null) {System.out.println("Failed to find path element " + i); break;}
 				ret = ret + stops[i].toString() + " -> ";
 			}
 			
@@ -109,6 +104,8 @@ public class BusNetwork {
 	
 	public Path getPath(Stop from, Stop to) {
 		// Setting up priority queue and distance cache
+		
+		int stop_amount = stop_list.size();
 		
 		QueueItem[] entry_cache = new QueueItem[stop_amount];
 		
@@ -135,9 +132,8 @@ public class BusNetwork {
 			
 			if (current_stop == to) break; // Found target stop, exit early
 			
-			Connection[] connections = current_stop.getConnections();
-			for (int i = 0; i < connections.length; i++) {
-				Connection path = connections[i];
+			List<Connection> connections = current_stop.connections;
+			for (Connection path:connections) {
 				Stop to_check = path.to;
 				
 				double new_cost = current_cost + path.cost;
@@ -187,27 +183,27 @@ public class BusNetwork {
 	
 	// Main BusNetwork class
 	
-	Stop[] stop_list;
-	int stop_amount;
+	List<Stop> stop_list;
 	
 	public Stop getStopById(int id) { // Gets stop by the actual bus id it has
-		for (int i = 0; i < stop_amount; i++)
-			if (stop_list[i].stop_id == id)
-				return stop_list[i];
+		for (Stop stop:stop_list)
+			if (stop.stop_id == id)
+				return stop;
 		
 		return null;
 	}
 	
 	public Stop getNode(int id) { // Gets stop by the internal id we have assigned it (much faster)
-		return stop_list[id];
+		return stop_list.get(id);
 	}
 	
-	public BusNetwork(Stop[] stops) {
-		this.stop_amount = stops.length;
+	public BusNetwork(List<Stop> stops) {
 		this.stop_list = stops;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
+		debug_print("Getting network from files...");
+		
 		// Initialising readers
 		
 		FileReader stops_reader;
@@ -230,11 +226,13 @@ public class BusNetwork {
 		transfers_reader.nextLine();
 		
 		// Reading stops
+		debug_print("Creating stops list...");
 		
-		int stop_amount = stops_reader.fileLength()-1;
-		Stop[] stops = new Stop[stop_amount];
+		//int stop_amount = stops_reader.fileLength()-1;
+		List<Stop> stops = new ArrayList<Stop>();
+		//Stop[] stops = new Stop[stop_amount];
 		
-		for (int i = 0; i < stop_amount; i++) {
+		for (int i = 0; true; i++) {
 			String str = stops_reader.nextLine();
 			if (str == null) break;
 			
@@ -243,11 +241,11 @@ public class BusNetwork {
 			int stop_id = Integer.parseInt(data[0]);
 			
 			String name = data[2];
-			
-			stops[i] = new Stop(i, stop_id, name);
+			stops.add(new Stop(i, stop_id, name));
 		}
 		
 		// Connecting direct routes
+		debug_print("Connecting direct routes...");
 		
 		BusNetwork network = new BusNetwork(stops);
 		
@@ -275,6 +273,7 @@ public class BusNetwork {
 		}
 		
 		// Connecting transfers
+		debug_print("Connecting transfers...");
 		
 		while (true) {
 			String str = transfers_reader.nextLine();
@@ -302,6 +301,7 @@ public class BusNetwork {
 		}
 		
 		// Returning network
+		debug_print("BusNetwork created successfully!");
 		
 		return network;
 	}
