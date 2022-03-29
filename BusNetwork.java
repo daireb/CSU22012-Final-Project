@@ -123,6 +123,8 @@ public class BusNetwork {
 		
 		// Computing path
 		
+		int scanned_count = 0;
+		
 		while (true) {
 			QueueItem entry = queue.poll();
 			if (entry == null) break;
@@ -132,16 +134,22 @@ public class BusNetwork {
 			
 			if (current_stop == to) break; // Found target stop, exit early
 			
+			scanned_count++;
+			if (scanned_count % 1000 == 0)
+				debug_print("Scanned " + scanned_count + " nodes");
+			
 			List<Connection> connections = current_stop.connections;
 			for (Connection path:connections) {
 				Stop to_check = path.to;
 				
+				QueueItem old_entry = entry_cache[to_check.node_id];
+				
 				double new_cost = current_cost + path.cost;
-				if (entry_cache[to_check.node_id].cost < new_cost) continue;
+				if (old_entry.cost <= new_cost) continue;
 				
 				QueueItem new_entry = new QueueItem(to_check, new_cost);
 				
-				queue.remove(entry_cache[to_check.node_id]);
+				queue.remove(old_entry);
 				queue.add(new_entry);
 				
 				entry_cache[to_check.node_id] = new_entry;
