@@ -41,6 +41,7 @@ public class BusNetwork {
 		Stop to;
 		
 		double cost;
+		int type;
 	}
 	
 	public static class Stop {
@@ -50,12 +51,13 @@ public class BusNetwork {
 		
 		String name;
 		
-		public void connect(Stop to, double length) {
+		public void connect(Stop to, double length, int type) {
 			Connection conn = new Connection();
 			
 			conn.from = this;
 			conn.to = to;
 			conn.cost = length;
+			conn.type = type;
 			
 			connections.add(conn);
 			
@@ -162,28 +164,23 @@ public class BusNetwork {
 		int path_length = 1;
 		Stop current_stop = to;
 		
-		Stop[] stops = new Stop[1024];
-		stops[0] = current_stop;
+		List<Stop> stops = new ArrayList<Stop>();
+		stops.add(current_stop);
 		
 		while (true) {
 			int from_id = came_from[current_stop.node_id];
 			if (from_id == -1) break;
 			
 			current_stop = this.getNode(from_id);
-			stops[path_length] = current_stop;
+			stops.add(0,current_stop);
 			
 			path_length++;
-		}
-		
-		Stop[] new_stops = new Stop[path_length]; // Reversing list order and copying into list of minimal size
-		for (int i = 0; i < path_length; i++) {
-			new_stops[i] = stops[path_length-i-1];
 		}
 		
 		// Returning Path object
 		
 		Path path = new Path();
-		path.stops = new_stops;
+		path.stops = stops.toArray(path.stops);
 		path.cost = entry_cache[to.node_id].cost;
 		
 		return path;
@@ -274,7 +271,7 @@ public class BusNetwork {
 			if (current_trip_id != trip_id) { // New trip
 				current_trip_id = trip_id;
 			} else { // Continue current trip
-				last_stop.connect(current_stop, BusNetwork.direct_route_cost);
+				last_stop.connect(current_stop, BusNetwork.direct_route_cost,0);
 			}
 			
 			last_stop = current_stop;
@@ -305,7 +302,7 @@ public class BusNetwork {
 				cost = min_time * BusNetwork.transfer_time_cost;
 			}
 			
-			from_stop.connect(to_stop, cost);
+			from_stop.connect(to_stop, cost, 1);
 		}
 		
 		// Returning network
