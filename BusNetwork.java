@@ -189,6 +189,7 @@ public class BusNetwork {
 	// Main BusNetwork class
 	
 	List<Stop> stop_list;
+	TST stopSearch;
 	
 	public Stop getStopById(int id) { // Gets stop by the actual bus id it has
 		for (Stop stop:stop_list)
@@ -204,6 +205,31 @@ public class BusNetwork {
 	
 	public BusNetwork(List<Stop> stops) {
 		this.stop_list = stops;
+		this.stopSearch = new TST();
+		
+		for (Stop stop:stops) {
+			//this.stopSearch.put(stop.name, stop);
+		}
+	}
+	
+	private static String prefix_to_suffix(String raw, String prefix) {
+		if (raw.length() < prefix.length()) return raw;
+		
+		String ret = raw;
+		if (ret.substring(0,prefix.length()).equalsIgnoreCase(prefix))
+			ret = ret.substring(prefix.length()+1) + " " + prefix;
+			
+		return ret;
+	}
+	
+	private static String correct_name(String raw_name) {
+		raw_name = prefix_to_suffix(raw_name,"FLAGSTOP");
+		raw_name = prefix_to_suffix(raw_name,"WB");
+		raw_name = prefix_to_suffix(raw_name,"NB");
+		raw_name = prefix_to_suffix(raw_name,"SB");
+		raw_name = prefix_to_suffix(raw_name,"EB");
+		
+		return raw_name;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
@@ -233,9 +259,7 @@ public class BusNetwork {
 		// Reading stops
 		debug_print("Creating stops list...");
 		
-		//int stop_amount = stops_reader.fileLength()-1;
 		List<Stop> stops = new ArrayList<Stop>();
-		//Stop[] stops = new Stop[stop_amount];
 		
 		for (int i = 0; true; i++) {
 			String str = stops_reader.nextLine();
@@ -245,7 +269,7 @@ public class BusNetwork {
 			
 			int stop_id = Integer.parseInt(data[0]);
 			
-			String name = data[2];
+			String name = correct_name(data[2]);
 			stops.add(new Stop(i, stop_id, name));
 		}
 		
