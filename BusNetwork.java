@@ -100,7 +100,7 @@ public class BusNetwork {
 				ret = ret + stops[i].toString() + " -> ";
 			}
 			
-			return ret;
+			return ret.substring(0, ret.length()-4);
 		}
 	}
 	
