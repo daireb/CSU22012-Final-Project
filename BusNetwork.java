@@ -45,11 +45,39 @@ public class BusNetwork {
 	}
 	
 	public static class Stop {
+		private static String prefix_to_suffix(String raw, String prefix) {
+			if (raw.length() < prefix.length()) return raw;
+			
+			String ret = raw;
+			if (ret.substring(0,prefix.length()).equalsIgnoreCase(prefix))
+				ret = ret.substring(prefix.length()+1) + " " + prefix;
+				
+			return ret;
+		}
+		
+		private static String correct_name(String raw_name) {
+			raw_name = prefix_to_suffix(raw_name,"FLAGSTOP");
+			raw_name = prefix_to_suffix(raw_name,"WB");
+			raw_name = prefix_to_suffix(raw_name,"NB");
+			raw_name = prefix_to_suffix(raw_name,"SB");
+			raw_name = prefix_to_suffix(raw_name,"EB");
+			
+			return raw_name;
+		}
+		
 		List<Connection> connections = new ArrayList<Connection>();
 		int stop_id;
 		int node_id;
+		int stop_code;
+		String TST_key;
 		
 		String name;
+		String desc;
+		
+		double lat;
+		double lon;
+		
+		String zone;
 		
 		public void connect(Stop to, double length, int type) {
 			Connection conn = new Connection();
@@ -60,9 +88,6 @@ public class BusNetwork {
 			conn.type = type;
 			
 			connections.add(conn);
-			
-			//connections[connection_amount] = conn;
-			//connection_amount++;
 		}
 		
 		public double getCost(Stop target) {
@@ -79,11 +104,24 @@ public class BusNetwork {
 			return this.name;
 		}
 		
-		public Stop(int node_id, int stop_id, String name) {
+		public String dataToString() {
+			String code_str = (this.stop_code != -1) ? Integer.toString(this.stop_code) : "N/A";
+			return this.name + ":\n" + this.desc + "\n" + "Stop ID: " + this.stop_id + "	Stop Code:" + code_str + "\n\nLocation: " + this.lat + "°, " + this.lon + "°\nZone: " + this.zone;
+		}
+		
+		public Stop(int node_id, int stop_id, int stop_code, String name, String desc, double lat, double lon, String zone) {
 			this.node_id = node_id;
 			this.stop_id = stop_id;
+			this.stop_code = stop_code;
+			this.TST_key = correct_name(name);
 			
 			this.name = name;
+			this.desc = desc;
+			
+			this.lat = lat;
+			this.lon = lon;
+			
+			this.zone = zone;
 		}
 	}
 	
@@ -161,7 +199,6 @@ public class BusNetwork {
 		
 		// Creating list of stops
 		
-		int path_length = 1;
 		Stop current_stop = to;
 		
 		List<Stop> stops = new ArrayList<Stop>();
@@ -173,8 +210,6 @@ public class BusNetwork {
 			
 			current_stop = this.getNode(from_id);
 			stops.add(0,current_stop);
-			
-			path_length++;
 		}
 		
 		// Returning Path object
@@ -189,7 +224,7 @@ public class BusNetwork {
 	// Main BusNetwork class
 	
 	List<Stop> stop_list;
-	TST stopSearch;
+	private TST<Stop> stopSearch;
 	
 	public Stop getStopById(int id) { // Gets stop by the actual bus id it has
 		for (Stop stop:stop_list)
@@ -205,31 +240,22 @@ public class BusNetwork {
 	
 	public BusNetwork(List<Stop> stops) {
 		this.stop_list = stops;
-		this.stopSearch = new TST();
+		this.stopSearch = new TST<Stop>();
 		
 		for (Stop stop:stops) {
-			//this.stopSearch.put(stop.name, stop);
+			this.stopSearch.put(stop.TST_key, stop);
 		}
 	}
 	
-	private static String prefix_to_suffix(String raw, String prefix) {
-		if (raw.length() < prefix.length()) return raw;
+	public List<Stop> searchStops(String search_term) {
+		List<Stop> ret = new ArrayList<Stop>();
 		
-		String ret = raw;
-		if (ret.substring(0,prefix.length()).equalsIgnoreCase(prefix))
-			ret = ret.substring(prefix.length()+1) + " " + prefix;
-			
+		 for (Object key: stopSearch.keysWithPrefix(search_term)) {
+			 Stop stop = (Stop) stopSearch.get((String) key);
+			 ret.add(stop);
+		 }
+		
 		return ret;
-	}
-	
-	private static String correct_name(String raw_name) {
-		raw_name = prefix_to_suffix(raw_name,"FLAGSTOP");
-		raw_name = prefix_to_suffix(raw_name,"WB");
-		raw_name = prefix_to_suffix(raw_name,"NB");
-		raw_name = prefix_to_suffix(raw_name,"SB");
-		raw_name = prefix_to_suffix(raw_name,"EB");
-		
-		return raw_name;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
@@ -268,9 +294,22 @@ public class BusNetwork {
 			String data[] = str.split(",");
 			
 			int stop_id = Integer.parseInt(data[0]);
+			int stop_code;
+			try {
+				stop_code = Integer.parseInt(data[1]);
+			} catch (NumberFormatException e) {
+				stop_code = -1;
+			}
 			
-			String name = correct_name(data[2]);
-			stops.add(new Stop(i, stop_id, name));
+			String name = data[2];
+			String desc = data[3];
+			
+			double lat = Double.parseDouble(data[4]);
+			double lon = Double.parseDouble(data[5]);
+			
+			String zone = data[6];
+			
+			stops.add(new Stop(i, stop_id, stop_code, name, desc, lat, lon, zone));
 		}
 		
 		// Connecting direct routes
