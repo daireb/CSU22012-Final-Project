@@ -125,7 +125,11 @@ public class MainProgramme {
 	}
 	
 	public static void main(String[] args) {
-		BusNetwork network = BusNetwork.networkFromFiles("src/stops.txt", "src/transfers.txt", "src/stop_times.txt");
+		String stops_file = args.length > 0 ? args[0] : "src/stops.txt";
+		String transfers_file = args.length > 1 ? args[1] : "src/transfers.txt";
+		String stop_times_file = args.length > 2 ? args[2] : "src/stop_times.txt";
+		
+		BusNetwork network = BusNetwork.networkFromFiles(stops_file, transfers_file, stop_times_file);
 		Scanner sc = new Scanner(System.in);
 		
 		//for (BusNetwork.Trip trip: network.trip_list)
