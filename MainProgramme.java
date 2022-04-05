@@ -73,6 +73,13 @@ public class MainProgramme {
 		}
 	}
 	
+	private static int findFirstChar(String str, char c) {
+		for (int i = 0; i < str.length(); i++)
+			if (str.charAt(i) == c)
+				return i;
+		return -1;
+	}
+	
 	public static void doArrivalTimes(Scanner sc, BusNetwork network) {
 		while (true) {
 			System.out.print("Enter a time: ");
@@ -80,6 +87,9 @@ public class MainProgramme {
 			
 			LocalTime time;
 			try {
+				if (findFirstChar(search_term,':') < 2)
+					search_term = "0" + search_term;
+				
 				time = LocalTime.parse(search_term);
 			} catch (java.time.format.DateTimeParseException e) {
 				System.out.println("Time was formatted incorrectly.");
