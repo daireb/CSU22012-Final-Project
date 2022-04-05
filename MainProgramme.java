@@ -43,8 +43,10 @@ public class MainProgramme {
 			if (search_results.size() <= 0) { // Failed to find any results
 				System.out.println("No results");
 				return null;
+			} else if (search_results.size() == 1) { // Only one search result
+				return search_results.get(0);
 			}
-			
+				
 			System.out.println("\nChoose from the following results:");
 			
 			int i = 0;
@@ -123,17 +125,21 @@ public class MainProgramme {
 			List<BusNetwork.Trip> trips = network.getTripsAtTime(time);
 			
 			if (trips.size() > 0) {
-				System.out.println("Trips ending at " + time + ": ");
-				for (int i = 0; i < trips.size(); i++)
-					System.out.println((i+1) + ". Trip id " + trips.get(i).id);
-				
-				System.out.println("\nEnter a number to see trip details.");
-				int index = nextInt(trips.size())-1;
-				
-				BusNetwork.Trip trip = trips.get(index);
-				System.out.println("\n" + trip.toString());
-			}
-			else
+				if (trips.size() == 1) { // Handling the case of 1 result
+					System.out.println("Only one trip ends at " + time);
+					System.out.println("\n" + trips.get(0).toString());
+				} else { // Selecting from multiple results
+					System.out.println("Trips ending at " + time + ": ");
+					for (int i = 0; i < trips.size(); i++)
+						System.out.println((i+1) + ". Trip id " + trips.get(i).id);
+					
+					System.out.println("\nEnter a number to see trip details.");
+					int index = nextInt(trips.size())-1;
+					
+					BusNetwork.Trip trip = trips.get(index);
+					System.out.println("\n" + trip.toString());
+				}
+			} else // No results
 				System.out.println("No trips found ending at " + time);
 		}
 	}
