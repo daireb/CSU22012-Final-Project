@@ -125,12 +125,12 @@ public class MainProgramme {
 			if (trips.size() > 0) {
 				System.out.println("Trips ending at " + time + ": ");
 				for (int i = 0; i < trips.size(); i++)
-					System.out.println(i + ". Trip id " + trips.get(i).id);
+					System.out.println((i+1) + ". Trip id " + trips.get(i).id);
 				
 				System.out.println("\nEnter a number to see trip details.");
-				int selection = nextInt(trips.size());
+				int index = nextInt(trips.size())-1;
 				
-				BusNetwork.Trip trip = trips.get(selection);
+				BusNetwork.Trip trip = trips.get(index);
 				System.out.println("\n" + trip.toString());
 			}
 			else
