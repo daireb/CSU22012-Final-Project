@@ -163,8 +163,6 @@ public class BusNetwork {
 		
 		// Computing path
 		
-		int scanned_count = 0;
-		
 		while (true) {
 			QueueItem entry = queue.poll();
 			if (entry == null) break;
@@ -173,10 +171,6 @@ public class BusNetwork {
 			double current_cost = entry.cost;
 			
 			if (current_stop == to) break; // Found target stop, exit early
-			
-			scanned_count++;
-			if (scanned_count % 1000 == 0)
-				debug_print("Scanned " + scanned_count + " nodes");
 			
 			List<Connection> connections = current_stop.connections;
 			for (Connection path:connections) {
@@ -322,7 +316,7 @@ public class BusNetwork {
 		List<Trip> ret = new ArrayList<Trip>();
 		
 		for (Trip trip: trip_list)
-			if (trip.getLastTime().compareTo(time) == 0)
+			if (trip.getLastTime().equals(time))
 				ret.add(trip);
 		
 		ret.sort(new TripComparator()); // Sorting by trip id :)
@@ -389,7 +383,6 @@ public class BusNetwork {
 		
 		BusNetwork network = new BusNetwork(stops);
 		
-		//int current_trip_id = -1; // Guaranteed to be different
 		Stop last_stop = null;
 		
 		network.trip_list = new ArrayList<Trip>();
