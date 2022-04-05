@@ -5,24 +5,38 @@ import java.time.format.FormatStyle;
 import java.util.Scanner;
 
 public class MainProgramme {
-	private static int nextInt(Scanner sc, int max) {
+	private static Scanner sc = new Scanner(System.in);
+	
+	private static String next() {
+		if (!sc.hasNextLine()) {
+			System.out.println("Fatal error in scanner");
+			return null;
+		}
+		
+		return sc.nextLine();
+	}
+	
+	private static int nextInt(int max) {
 		System.out.print("Enter a number: ");
 		while (true) {
-			try {
-				int ret = sc.nextInt();
-				if (ret >= 1 && ret <= max) {
-					return ret;
-				}
-			} finally {}
+			String str = next();
 			
-			System.out.println("Please enter a valid number...");
+			try {
+				int ret = Integer.parseInt(str);
+				if (ret > 0 && ret <= max)
+					return ret;
+				else
+					System.out.println("Please enter a number between 1 and " + max);
+			} catch (NumberFormatException e) {
+				System.out.println("Please enter a valid number...");
+			}
 		}
 	}
 	
-	private static BusNetwork.Stop searchStop(Scanner sc, BusNetwork network) {
+	private static BusNetwork.Stop searchStop(BusNetwork network) {
 		while (true) {
 			System.out.print("Search for a stop: ");
-			String search_term = sc.next().toUpperCase();
+			String search_term = next().toUpperCase();
 			
 			List<BusNetwork.Stop> search_results = network.searchStops(search_term);
 			
@@ -41,15 +55,15 @@ public class MainProgramme {
 			}
 			
 			System.out.println();
-			int index = nextInt(sc,search_results.size())-1;
+			int index = nextInt(search_results.size())-1;
 			
 			return search_results.get(index);
 		}
 	}
 	
-	public static void doStops(Scanner sc, BusNetwork network) {
+	public static void doStops(BusNetwork network) {
 		System.out.println();
-		BusNetwork.Stop stop = searchStop(sc,network);
+		BusNetwork.Stop stop = searchStop(network);
 		if (stop == null) return;
 		
 		while (true) {
@@ -57,14 +71,14 @@ public class MainProgramme {
 			System.out.println("Selected stop: " + stop.name);
 			System.out.println("Choose from the following options:\n1. See stop data\n2. Plot route\n3. Exit to main menu\n");
 			
-			int selection = nextInt(sc,3);
+			int selection = nextInt(3);
 			
 			if (selection == 1) {
 				System.out.println();
 				System.out.println(stop.dataToString());
 			} else if (selection == 2) {
 				System.out.println();
-				BusNetwork.Stop new_stop = searchStop(sc,network);
+				BusNetwork.Stop new_stop = searchStop(network);
 				if (new_stop == null) continue;
 				
 				BusNetwork.Path path = network.getPath(stop, new_stop);
@@ -83,12 +97,12 @@ public class MainProgramme {
 		return -1;
 	}
 	
-	public static void doArrivalTimes(Scanner sc, BusNetwork network) {
+	public static void doArrivalTimes(BusNetwork network) {
 		while (true) {
 			System.out.print("\nType \"exit\" to return to the main menu.\nEnter a time: ");
-			String search_term = sc.next();
+			String search_term = next();
 			
-			if (search_term.length() >= 4 && search_term.substring(0,4).toLowerCase().compareTo("exit") == 0)
+			if (search_term.length() >= 4 && search_term.substring(0,4).toLowerCase().equals("exit"))
 				return;
 			
 			LocalTime time;
@@ -114,7 +128,7 @@ public class MainProgramme {
 					System.out.println(i + ". Trip id " + trips.get(i).id);
 				
 				System.out.println("\nEnter a number to see trip details.");
-				int selection = nextInt(sc,trips.size());
+				int selection = nextInt(trips.size());
 				
 				BusNetwork.Trip trip = trips.get(selection);
 				System.out.println("\n" + trip.toString());
@@ -130,32 +144,24 @@ public class MainProgramme {
 		String stop_times_file = args.length > 2 ? args[2] : "src/stop_times.txt";
 		
 		BusNetwork network = BusNetwork.networkFromFiles(stops_file, transfers_file, stop_times_file);
-		Scanner sc = new Scanner(System.in);
-		
-		//for (BusNetwork.Trip trip: network.trip_list)
-		//	System.out.println(trip.id + ": " + trip.getLastTime());
+		if (network == null) {
+			System.out.println("Error finding file, exiting programme...");
+			next(); // Requires user to press enter
+			return;
+		}
 		
 		while (true) {
 			System.out.println("\nChoose from the following options:\n1. Search for stop\n2. Find trips by arrival time\n3. Exit programme\n");
-			int selection = nextInt(sc,3);
+			int selection = nextInt(3);
 			
 			if (selection == 1)
-				doStops(sc,network);
+				doStops(network);
 			else if (selection == 2)
-				doArrivalTimes(sc,network);
+				doArrivalTimes(network);
 			else
 				break;
 		}
 		
 		System.out.println("Exited programme...");
-		
-		//BusNetwork.Stop start = network.getNode(0);
-		//BusNetwork.Stop finish = network.getNode(60);
-		
-		//System.out.println("starting path");
-		//BusNetwork.Path path = network.getPath(start, finish);
-		
-		//System.out.println(path.toString());
-		//System.out.println("done");
 	}
 }
