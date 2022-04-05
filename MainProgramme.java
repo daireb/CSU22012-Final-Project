@@ -163,5 +163,6 @@ public class MainProgramme {
 		}
 		
 		System.out.println("Exited programme...");
+		next();
 	}
 }
