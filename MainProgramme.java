@@ -31,7 +31,7 @@ public class MainProgramme {
 				return null;
 			}
 			
-			System.out.println("Choose from the following results:");
+			System.out.println("\nChoose from the following results:");
 			
 			int i = 0;
 			for (BusNetwork.Stop stop: search_results) {
@@ -40,6 +40,7 @@ public class MainProgramme {
 				System.out.println(i + ". " + stop.name);
 			}
 			
+			System.out.println();
 			int index = nextInt(sc,search_results.size())-1;
 			
 			return search_results.get(index);
@@ -47,20 +48,22 @@ public class MainProgramme {
 	}
 	
 	public static void doStops(Scanner sc, BusNetwork network) {
+		System.out.println();
 		BusNetwork.Stop stop = searchStop(sc,network);
 		if (stop == null) return;
 		
 		while (true) {
 			System.out.println();
 			System.out.println("Selected stop: " + stop.name);
-			System.out.println("Choose from the following options:\n1. See stop data\n2. Plot route\n3. Select new stop");
+			System.out.println("Choose from the following options:\n1. See stop data\n2. Plot route\n3. Exit to main menu\n");
 			
 			int selection = nextInt(sc,3);
-			System.out.println();
 			
 			if (selection == 1) {
+				System.out.println();
 				System.out.println(stop.dataToString());
 			} else if (selection == 2) {
+				System.out.println();
 				BusNetwork.Stop new_stop = searchStop(sc,network);
 				if (new_stop == null) continue;
 				
@@ -82,8 +85,11 @@ public class MainProgramme {
 	
 	public static void doArrivalTimes(Scanner sc, BusNetwork network) {
 		while (true) {
-			System.out.print("Enter a time: ");
+			System.out.print("\nType \"exit\" to return to the main menu.\nEnter a time: ");
 			String search_term = sc.next();
+			
+			if (search_term.length() >= 4 && search_term.substring(0,4).toLowerCase().compareTo("exit") == 0)
+				return;
 			
 			LocalTime time;
 			try {
@@ -98,9 +104,23 @@ public class MainProgramme {
 			
 			DateTimeFormatter formatter = DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT);
 			
-			System.out.println("Searching for all trips arriving at " + time.format(formatter) + "...");
+			System.out.println("Searching for all trips arriving at " + time.format(formatter) + "...\n");
 			
-			//List<BusNetwork.Path> paths = network.getTripsAtTime(time);
+			List<BusNetwork.Trip> trips = network.getTripsAtTime(time);
+			
+			if (trips.size() > 0) {
+				System.out.println("Trips ending at " + time + ": ");
+				for (int i = 0; i < trips.size(); i++)
+					System.out.println(i + ". Trip id " + trips.get(i).id);
+				
+				System.out.println("\nEnter a number to see trip details.");
+				int selection = nextInt(sc,trips.size());
+				
+				BusNetwork.Trip trip = trips.get(selection);
+				System.out.println("\n" + trip.toString());
+			}
+			else
+				System.out.println("No trips found ending at " + time);
 		}
 	}
 	
@@ -108,8 +128,11 @@ public class MainProgramme {
 		BusNetwork network = BusNetwork.networkFromFiles("src/stops.txt", "src/transfers.txt", "src/stop_times.txt");
 		Scanner sc = new Scanner(System.in);
 		
+		//for (BusNetwork.Trip trip: network.trip_list)
+		//	System.out.println(trip.id + ": " + trip.getLastTime());
+		
 		while (true) {
-			System.out.println("Choose from the following options:\n1. Search for stop\n2. Find trips by arrival time\n3. Exit programme");
+			System.out.println("\nChoose from the following options:\n1. Search for stop\n2. Find trips by arrival time\n3. Exit programme\n");
 			int selection = nextInt(sc,3);
 			
 			if (selection == 1)
