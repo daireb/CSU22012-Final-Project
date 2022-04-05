@@ -162,7 +162,7 @@ public class MainProgramme {
 				break;
 		}
 		
-		System.out.println("Exited programme...");
+		System.out.println("Exiting programme...");
 		next();
 	}
 }
