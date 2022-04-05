@@ -27,7 +27,7 @@ public class BusNetwork {
 		}
 	}
 	
-	private class CustomComparator implements Comparator<QueueItem> {
+	private class DijkstraComparator implements Comparator<QueueItem> {
 		@Override
 		public int compare(QueueItem o1, QueueItem o2) {
 			return Double.compare(o1.cost,o2.cost);
@@ -156,7 +156,7 @@ public class BusNetwork {
 			came_from[i] = -1;
 		}
 		
-		PriorityQueue<QueueItem> queue = new PriorityQueue<>(new CustomComparator());
+		PriorityQueue<QueueItem> queue = new PriorityQueue<>(new DijkstraComparator());
 		
 		entry_cache[from.node_id] = new QueueItem(from, 0);
 		queue.add(entry_cache[from.node_id]);
@@ -224,6 +224,13 @@ public class BusNetwork {
 	
 	// Trip class
 	
+	private class TripComparator implements Comparator<Trip> {
+		@Override
+		public int compare(BusNetwork.Trip o1, BusNetwork.Trip o2) {
+			return Integer.compare(o1.id, o2.id);
+		}
+	}
+	
 	public static class Trip extends Path {
 		List<LocalTime> times = new ArrayList<LocalTime>();
 		
@@ -257,6 +264,19 @@ public class BusNetwork {
 		
 		public Trip(int id) {
 			this.id = id;
+		}
+		
+		public String toString() {
+			String ret = "Trip " + id + ": ";
+			
+			for (int i = 0; i < stops.size(); i++) {
+				Stop stop = stops.get(i);
+				LocalTime time = times.get(i);
+				
+				ret = ret + "\n	" + time + " @ " + stop.toString();
+			}
+			
+			return ret;
 		}
 	}
 	
@@ -298,10 +318,16 @@ public class BusNetwork {
 		return ret;
 	}
 	
-	public List<Path> getTripsAtTime() {
+	public List<Trip> getTripsAtTime(LocalTime time) {
+		List<Trip> ret = new ArrayList<Trip>();
 		
+		for (Trip trip: trip_list)
+			if (trip.getLastTime().compareTo(time) == 0)
+				ret.add(trip);
 		
-		return null;
+		ret.sort(new TripComparator()); // Sorting by trip id :)
+		
+		return ret;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
@@ -393,6 +419,7 @@ public class BusNetwork {
 			
 			if (current_trip.id != trip_id) { // New trip
 				current_trip = new Trip(trip_id);
+				network.trip_list.add(current_trip);
 			} else { // Continue current trip
 				last_stop.connect(current_stop, BusNetwork.direct_route_cost,0);
 			}
