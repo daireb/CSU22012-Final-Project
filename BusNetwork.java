@@ -1,5 +1,5 @@
-import java.io.File;
 import java.io.FileNotFoundException;
+import java.time.*;
 import java.util.*;
 
 public class BusNetwork {
@@ -128,21 +128,21 @@ public class BusNetwork {
 	// Paths
 	
 	public static class Path {
-		Stop[] stops = {};
+		List<Stop> stops = new ArrayList<Stop>();
 		double cost = 0;
 		
 		public String toString() {
 			String ret = "Total cost: " + Double.toString(cost) + "\n";
 			
-			for (int i = 0; i < stops.length; i++) {
-				ret = ret + stops[i].toString() + " -> ";
+			for (Stop stop: stops) {
+				ret = ret + stop.toString() + " -> ";
 			}
 			
 			return ret.substring(0, ret.length()-4);
 		}
 	}
 	
-	public Path getPath(Stop from, Stop to) {
+	public Path getPath(Stop from, Stop to) { // Finds shortest path between two stops using Dijkstra
 		// Setting up priority queue and distance cache
 		
 		int stop_amount = stop_list.size();
@@ -215,15 +215,55 @@ public class BusNetwork {
 		// Returning Path object
 		
 		Path path = new Path();
-		path.stops = stops.toArray(path.stops);
+		
+		path.stops = stops;
 		path.cost = entry_cache[to.node_id].cost;
 		
 		return path;
 	}
 	
+	// Trip class
+	
+	public static class Trip extends Path {
+		List<LocalTime> times = new ArrayList<LocalTime>();
+		
+		int id;
+		
+		public LocalTime getLastTime() {
+			if (times.size() > 0)
+				return times.get(times.size()-1);
+			else
+				return null;
+		}
+		
+		public Stop getLastStop() {
+			if (stops.size() > 0)
+				return stops.get(stops.size()-1);
+			else
+				return null;
+		}
+		
+		public void addStop(Stop stop, LocalTime time) {
+			if (times.size() > 0) {
+				LocalTime last_time = getLastTime();
+				if (last_time != null && time.compareTo(last_time) < 0) {
+					System.out.println("Warning: Added stop to trip going back in time! (" + last_time + " > " + time + ")");
+				}
+			}
+			
+			stops.add(stop);
+			times.add(time);
+		}
+		
+		public Trip(int id) {
+			this.id = id;
+		}
+	}
+	
 	// Main BusNetwork class
 	
 	List<Stop> stop_list;
+	List<Trip> trip_list;
 	private TST<Stop> stopSearch;
 	
 	public Stop getStopById(int id) { // Gets stop by the actual bus id it has
@@ -256,6 +296,12 @@ public class BusNetwork {
 		 }
 		
 		return ret;
+	}
+	
+	public List<Path> getTripsAtTime() {
+		
+		
+		return null;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
@@ -317,8 +363,11 @@ public class BusNetwork {
 		
 		BusNetwork network = new BusNetwork(stops);
 		
-		int current_trip_id = -1; // Guaranteed to be different
+		//int current_trip_id = -1; // Guaranteed to be different
 		Stop last_stop = null;
+		
+		network.trip_list = new ArrayList<Trip>();
+		Trip current_trip = new Trip(-1); // Invalid id so is guaranteed to be different
 		
 		while (true) {
 			String str = times_reader.nextLine();
@@ -329,14 +378,26 @@ public class BusNetwork {
 			int trip_id = Integer.parseInt(data[0]);
 			int stop_id = Integer.parseInt(data[3]);
 			
+			LocalTime arrival_time;
+			try {
+				String raw_t = data[1];
+				if (raw_t.charAt(0) == ' ')
+					raw_t = "0" + raw_t.substring(1);
+				
+				arrival_time = LocalTime.parse(raw_t);
+			} catch (java.time.format.DateTimeParseException e) {
+				arrival_time = LocalTime.MAX;
+			}
+			
 			Stop current_stop = network.getStopById(stop_id);
 			
-			if (current_trip_id != trip_id) { // New trip
-				current_trip_id = trip_id;
+			if (current_trip.id != trip_id) { // New trip
+				current_trip = new Trip(trip_id);
 			} else { // Continue current trip
 				last_stop.connect(current_stop, BusNetwork.direct_route_cost,0);
 			}
 			
+			current_trip.addStop(current_stop, arrival_time);
 			last_stop = current_stop;
 		}
 		
