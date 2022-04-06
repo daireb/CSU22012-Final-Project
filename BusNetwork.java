@@ -151,7 +151,7 @@ public class BusNetwork {
 					if (c.type == 0)
 						ret = ret + " -> ";
 					else
-						ret = ret + " TRANSFER ";
+						ret = ret + " ==> ";
 				}
 					
 				ret = ret + stop.toString();
