@@ -56,6 +56,8 @@ public class BusNetwork {
 		}
 		
 		private static String correct_name(String raw_name) {
+			raw_name = raw_name.toUpperCase();
+			
 			raw_name = prefix_to_suffix(raw_name,"FLAGSTOP");
 			raw_name = prefix_to_suffix(raw_name,"WB");
 			raw_name = prefix_to_suffix(raw_name,"NB");
@@ -236,10 +238,15 @@ public class BusNetwork {
 	
 	// Trip class
 	
-	private class TripComparator implements Comparator<Trip> {
+	private static class TripComparator implements Comparator<Trip> {
 		@Override
 		public int compare(BusNetwork.Trip o1, BusNetwork.Trip o2) {
-			return Integer.compare(o1.id, o2.id);
+			int time_delta = o1.last_time.compareTo(o2.last_time);
+			
+			if (time_delta == 0)
+				return Integer.compare(o1.id, o2.id); // Sort by ID if time is equal
+			else
+				return time_delta; // Sort by time
 		}
 	}
 	
@@ -247,13 +254,7 @@ public class BusNetwork {
 		List<LocalTime> times = new ArrayList<LocalTime>();
 		
 		int id;
-		
-		public LocalTime getLastTime() {
-			if (times.size() > 0)
-				return times.get(times.size()-1);
-			else
-				return null;
-		}
+		LocalTime last_time = null;
 		
 		public Stop getLastStop() {
 			if (stops.size() > 0)
@@ -264,7 +265,6 @@ public class BusNetwork {
 		
 		public void addStop(Stop stop, LocalTime time) {
 			if (times.size() > 0) {
-				LocalTime last_time = getLastTime();
 				if (last_time != null && time.compareTo(last_time) < 0) {
 					System.out.println("Warning: Added stop to trip going back in time! (" + last_time + " > " + time + ")");
 				}
@@ -272,6 +272,9 @@ public class BusNetwork {
 			
 			stops.add(stop);
 			times.add(time);
+			
+			if (last_time == null || time.compareTo(last_time) > 0)
+				last_time = time;
 		}
 		
 		public Trip(int id) {
@@ -330,16 +333,42 @@ public class BusNetwork {
 		return ret;
 	}
 	
+	private static int BinarySearch(List<Trip> list, LocalTime target, int first, int last) {
+		int mid = (first + last) / 2;
+		
+		while (first <= last) {
+			if (list.get(mid).last_time.compareTo(target) < 0)
+				first = mid+1;
+			else if (list.get(mid).last_time.equals(target))
+				return mid;
+			else
+				last = mid-1;
+			
+			mid = (first + last) / 2;
+		}
+		
+		return -1; // Didn't find element
+	}
+	
 	public List<Trip> getTripsAtTime(LocalTime time) {
-		List<Trip> ret = new ArrayList<Trip>();
+		int index = BinarySearch(trip_list,time,0,trip_list.size()-1);
+		if (index == -1) // None found, return empty list
+			return new ArrayList<Trip>();
 		
-		for (Trip trip: trip_list)
-			if (trip.getLastTime().equals(time))
-				ret.add(trip);
+		int start_index = index;
+		while (trip_list.get(start_index-1).last_time.equals(time))
+			start_index--;
 		
-		ret.sort(new TripComparator()); // Sorting by trip id :)
+		int end_index = index;
+		while (trip_list.get(end_index).last_time.equals(time))
+			end_index++;
 		
-		return ret;
+		List<Trip> list = new ArrayList<Trip>();
+		
+		for (int i = start_index; i < end_index; i++)
+			list.add(trip_list.get(i));
+		
+		return list;
 	}
 	
 	public static BusNetwork networkFromFiles(String stops_file, String transfers_file, String times_file) {
@@ -438,6 +467,8 @@ public class BusNetwork {
 			current_trip.addStop(current_stop, arrival_time);
 			last_stop = current_stop;
 		}
+		
+		network.trip_list.sort(new TripComparator());
 		
 		// Connecting transfers
 		debug_print("Connecting transfers...");
