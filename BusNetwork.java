@@ -90,14 +90,22 @@ public class BusNetwork {
 			connections.add(conn);
 		}
 		
-		public double getCost(Stop target) {
-			if (target == this) return 0;
+		public Connection getConnection(Stop target) {
 			for (Connection c:connections) {
 				if (c.to == target)
-					return c.cost;
+					return c;
 			}
 			
-			return Double.MAX_VALUE;
+			return null;
+		}
+		
+		public double getCost(Stop target) {
+			if (target == this) return 0;
+			Connection c = getConnection(target);
+			if (c != null)
+				return c.cost;
+			else
+				return Double.MAX_VALUE;
 		}
 		
 		public String toString() {
@@ -134,11 +142,21 @@ public class BusNetwork {
 		public String toString() {
 			String ret = "Total cost: " + Double.toString(cost) + "\n";
 			
+			Stop last_stop = null;
 			for (Stop stop: stops) {
-				ret = ret + stop.toString() + " -> ";
+				if (last_stop != null) {
+					Connection c = last_stop.getConnection(stop);
+					if (c.type == 0)
+						ret = ret + " -> ";
+					else
+						ret = ret + " TRANSFER ";
+				}
+					
+				ret = ret + stop.toString();
+				last_stop = stop;
 			}
 			
-			return ret.substring(0, ret.length()-4);
+			return ret.substring(0);
 		}
 	}
 	
@@ -165,7 +183,7 @@ public class BusNetwork {
 		
 		while (true) {
 			QueueItem entry = queue.poll();
-			if (entry == null) break;
+			if (entry == null) return null; // Queue was fully exhausted = no path found
 			
 			Stop current_stop = entry.stop;
 			double current_cost = entry.cost;

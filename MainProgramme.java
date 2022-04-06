@@ -85,7 +85,11 @@ public class MainProgramme {
 				
 				BusNetwork.Path path = network.getPath(stop, new_stop);
 				
-				System.out.println("\n" + path.toString());
+				if (path == null)
+					System.out.println("\nNo route found");
+				else
+					System.out.println("\n" + path.toString());
+				
 			} else {
 				break;
 			}
